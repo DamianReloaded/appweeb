@@ -15,7 +15,8 @@ public:
         uint16_t port);
 
     void Run();
-
+	void Stop();
+	
 private:
 
     static std::filesystem::path GetRootPath();
@@ -56,4 +57,7 @@ private:
         std::string_view error = {});
 
     uint16_t m_port;
+
+    Socket m_listener;
+    bool m_running = true;
 };

@@ -1,4 +1,5 @@
 #include "socket.hpp"
+#include <iostream>
 
 #define WIN32_LEAN_AND_MEAN
 
@@ -98,6 +99,12 @@ bool Socket::Listen(
             reinterpret_cast<sockaddr*>(&address),
             sizeof(address)) == SOCKET_ERROR)
     {
+	std::cout
+		<< "Bind failed: "
+		<< WSAGetLastError()
+		<< " - Already running? Check the task manager."
+		<< std::endl;		
+		
         Close();
         return false;
     }
