@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Write JSON Test</title>
+
+    <style>
+        body
+        {
+            font-family: sans-serif;
+            margin: 20px;
+        }
+
+        label
+        {
+            display: block;
+            margin-top: 10px;
+        }
+
+        input
+        {
+            width: 600px;
+        }
+
+        textarea
+        {
+            width: 100%;
+            height: 300px;
+            box-sizing: border-box;
+        }
+
+        button
+        {
+            margin-top: 10px;
+        }
+
+        pre
+        {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 20px;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Write JSON Test</h1>
+
+    <label>
+        Path
+    </label>
+
+    <input
+        id="path"
+        value="data/settings.json">
+
+    <label>
+        JSON Content
+    </label>
+
+    <textarea id="json">
+{
+    "name": "Test",
+    "value": 123,
+    "items":
+    [
+        1,
+        2,
+        3
+    ]
+}
+    </textarea>
+
+    <br>
+
+    <button id="writeButton">
+        Write File
+    </button>
+
+    <button id="largeButton">
+        Generate 5 MB Test
+    </button>
+
+    <pre id="result"></pre>
+
+    <script>
+
+        async function WriteJson(
+            path,
+            jsonText)
+        {
+            const response =
+                await fetch(
+                    "/api/write-json",
+                    {
+                        method: "POST",
+                        headers:
+                        {
+                            "Content-Type":
+                                "application/json"
+                        },
+                        body: JSON.stringify(
+                        {
+                            path: path,
+                            json: jsonText
+                        })
+                    });
+
+            return await response.json();
+        }
+
+        function SetResult(text)
+        {
+            document
+                .getElementById("result")
+                .textContent = text;
+        }
+
+        document
+            .getElementById("writeButton")
+            .addEventListener(
+                "click",
+                async () =>
+                {
+                    try
+                    {
+                        const path =
+                            document
+                                .getElementById("path")
+                                .value;
+
+                        const jsonText =
+                            document
+                                .getElementById("json")
+                                .value;
+
+                        JSON.parse(
+                            jsonText);
+
+                        const result =
+                            await WriteJson(
+                                path,
+                                jsonText);
+
+                        SetResult(
+                            JSON.stringify(
+                                result,
+                                null,
+                                4));
+                    }
+                    catch (error)
+                    {
+                        SetResult(
+                            error.toString());
+                    }
+                });
+
+        document
+            .getElementById("largeButton")
+            .addEventListener(
+                "click",
+                () =>
+                {
+                    const data =
+                    {
+                        name: "Large Test",
+                        values: []
+                    };
+
+                    while (
+                        JSON.stringify(data)
+                            .length <
+                        5 * 1024 * 1024)
+                    {
+                        data.values.push(
+                        {
+                            id:
+                                data.values.length,
+
+                            text:
+                                "abcdefghijklmnopqrstuvwxyz0123456789",
+
+                            timestamp:
+                                Date.now()
+                        });
+                    }
+
+                    document
+                        .getElementById("json")
+                        .value =
+                            JSON.stringify(
+                                data,
+                                null,
+                                4);
+
+                    SetResult(
+                        "Generated approximately 5 MB JSON document.");
+                });
+
+    </script>
+
+</body>
+</html>
