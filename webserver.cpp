@@ -13,19 +13,31 @@ WebServer::WebServer(
 {
 }
 
+void WebServer::Stop()
+{
+    m_running = false;
+
+    m_listener.Close();
+}
+
 void WebServer::Run()
 {
-    Socket listener;
-
-    if (!listener.Listen(m_port))
+    if (!m_listener.Listen(m_port))
     {
         return;
     }
 
-    for (;;)
+    m_running = true;
+
+    while (m_running)
     {
         Socket client =
-            listener.Accept();
+            m_listener.Accept();
+
+        if (!m_running)
+        {
+            break;
+        }
 
         if (!client.IsValid())
         {
