@@ -433,7 +433,7 @@ void WebServer::HandleClient(
         !std::filesystem::exists(path))
     {
         constexpr char text[] =
-            "404 Not Found";
+            "{\"HttpError\":\"404 Not Found\"}";
 
         SendResponse(
             client,
