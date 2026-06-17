@@ -2,7 +2,7 @@
 #include <iostream>
 #include <windows.h>
 
-static WebServer* g_server = nullptr;
+static appweeb::WebServer* g_server = nullptr;
 
 BOOL WINAPI ConsoleHandler(
     DWORD signal)
@@ -32,7 +32,7 @@ int main()
         << "Open this URL in your browser: "
         << "http://localhost:8080/\n";
 
-    WebServer server(8080);
+    appweeb::WebServer server(8080);
 
     g_server = &server;
 
