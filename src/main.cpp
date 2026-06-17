@@ -1,46 +1,43 @@
 #include "webserver.hpp"
+
+#include <atomic>
+#include <csignal>
 #include <iostream>
-#include <windows.h>
 
-static appweeb::WebServer* g_server = nullptr;
+static std::atomic_bool g_stopRequested = false;
 
-BOOL WINAPI ConsoleHandler(
-    DWORD signal)
+void SignalHandler(
+    int)
 {
-    switch (signal)
-    {
-        case CTRL_C_EVENT:
-        case CTRL_BREAK_EVENT:
-        case CTRL_CLOSE_EVENT:
-        case CTRL_SHUTDOWN_EVENT:
-        {
-            if (g_server)
-            {
-                g_server->Stop();
-            }
-
-            return TRUE;
-        }
-    }
-
-    return FALSE;
+    g_stopRequested.store(
+        true,
+        std::memory_order_relaxed);
 }
 
 int main()
 {
+    std::signal(
+        SIGINT,
+        SignalHandler);
+
+    std::signal(
+        SIGTERM,
+        SignalHandler);
+
     std::cout
         << "Open this URL in your browser: "
         << "http://localhost:8080/\n";
 
     appweeb::WebServer server(8080);
 
-    g_server = &server;
+    server.SetRootPath("wwwroot");
 
-    SetConsoleCtrlHandler(
-        ConsoleHandler,
-        TRUE);
+    while (!g_stopRequested.load(std::memory_order_relaxed))
+    {
+        server.Run();
+    }
 
-    server.Run();
+    server.Stop();
 
     return 0;
 }

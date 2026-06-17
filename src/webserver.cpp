@@ -24,6 +24,8 @@ namespace appweeb
 
     void WebServer::Run()
     {
+        m_rootPath = LoadRootPath();
+
         if (!m_listener.Listen(m_port))
         {
             return;
@@ -463,7 +465,7 @@ namespace appweeb
     {
         auto root =
             std::filesystem::weakly_canonical(
-                GetRootPath());
+                m_rootPath);
 
         std::string relative(url);
 
@@ -487,16 +489,14 @@ namespace appweeb
             std::filesystem::weakly_canonical(
                 root / relative);
 
-        auto candidateString =
-            candidate.wstring();
-
-        auto rootString =
-            root.wstring();
+        auto relativePath =
+            std::filesystem::relative(
+                candidate,
+                root);
 
         if (
-            candidateString.rfind(
-                rootString,
-                0) != 0)
+            relativePath.empty() ||
+            relativePath.string().starts_with(".."))
         {
             return {};
         }
@@ -643,5 +643,74 @@ namespace appweeb
                 static_cast<int>(
                     size));
         }
+    }
+
+    std::string WebServer::ReadTextFile(
+        const std::filesystem::path& path)
+    {
+        std::ifstream file(path);
+
+        if (!file)
+        {
+            return {};
+        }
+
+        return
+            std::string(
+                std::istreambuf_iterator<char>(file),
+                std::istreambuf_iterator<char>());
+    }
+
+    std::filesystem::path WebServer::LoadRootPath()
+    {
+        auto root =
+            m_rootPath.empty()
+                ? std::filesystem::weakly_canonical(
+                    GetRootPath())
+                : std::filesystem::weakly_canonical(
+                    m_rootPath);
+
+        auto configPath =
+            root /
+            "config.json";
+
+        if (!std::filesystem::exists(configPath))
+        {
+            return root;
+        }
+
+        auto configText =
+            ReadTextFile(
+                configPath);
+
+        auto wwwroot =
+            ExtractJsonString(
+                configText,
+                "wwwroot");
+
+        if (wwwroot.empty())
+        {
+            return root;
+        }
+
+        auto configuredRoot =
+            std::filesystem::weakly_canonical(
+                root /
+                wwwroot);
+
+        if (!std::filesystem::exists(configuredRoot))
+        {
+            return root;
+        }
+
+        return configuredRoot;
+    }
+
+    void WebServer::SetRootPath(
+        std::filesystem::path rootPath)
+    {
+        m_rootPath =
+            std::filesystem::weakly_canonical(
+                std::move(rootPath));
     }
 }

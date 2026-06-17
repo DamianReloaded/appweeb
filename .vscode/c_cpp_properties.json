@@ -1,0 +1,31 @@
+{
+    "configurations":
+    [
+        {
+            "name": "Linux",
+            "compilerPath": "/usr/bin/g++",
+            "defines":
+            [
+                "__linux__"
+            ],
+            "intelliSenseMode": "linux-gcc-x64",
+            "cStandard": "c23",
+            "cppStandard": "gnu++23"
+        },
+        {
+            "name": "Windows",
+            "compilerPath": "E:\\msys64\\mingw64\\bin\\g++",
+            "defines":
+            [
+                "_WIN32",
+                "WIN32",
+                "NOMINMAX",
+                "WIN32_LEAN_AND_MEAN"
+            ],
+            "intelliSenseMode": "windows-gcc-x64",
+            "cStandard": "c23",
+            "cppStandard": "gnu++23"
+        }
+    ],
+    "version": 4
+}

@@ -1,0 +1,82 @@
+{
+    "version": "2.0.0",
+    "tasks":
+    [
+        {
+            "label": "Build Linux Debug",
+            "type": "shell",
+            "command": "make",
+            "args":
+            [
+                "PLATFORM=linux",
+                "MODE=debug"
+            ],
+            "group":
+            {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build Linux Release",
+            "type": "shell",
+            "command": "make",
+            "args":
+            [
+                "PLATFORM=linux",
+                "MODE=release"
+            ]
+        },
+        {
+            "label": "Build Windows Debug",
+            "type": "shell",
+            "command": "make",
+            "args":
+            [
+                "PLATFORM=windows",
+                "MODE=debug"
+            ]
+        },
+        {
+            "label": "Build Windows Release",
+            "type": "shell",
+            "command": "make",
+            "args":
+            [
+                "PLATFORM=windows",
+                "MODE=release"
+            ]
+        },
+        {
+            "label": "Clean",
+            "type": "shell",
+            "command": "make",
+            "args":
+            [
+                "clean"
+            ]
+        },
+        {
+            "label": "Rebuild Linux Debug",
+            "type": "shell",
+            "command": "make",
+            "args":
+            [
+                "rebuild",
+                "PLATFORM=linux",
+                "MODE=debug"
+            ]
+        },
+        {
+            "label": "Rebuild Windows Debug",
+            "type": "shell",
+            "command": "make",
+            "args":
+            [
+                "rebuild",
+                "PLATFORM=windows",
+                "MODE=debug"
+            ]
+        }
+    ]
+}

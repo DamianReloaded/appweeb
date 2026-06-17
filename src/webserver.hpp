@@ -19,9 +19,11 @@ namespace appweeb
         void Run();
         void Stop();
         
+        void SetRootPath(std::filesystem::path rootPath);
+
     private:
 
-        static std::filesystem::path ResolvePath(
+        std::filesystem::path ResolvePath(
             std::string_view url);
 
         static std::vector<std::byte> ReadFile(
@@ -56,9 +58,14 @@ namespace appweeb
             bool success,
             std::string_view error = {});
 
-        uint16_t m_port;
+        std::filesystem::path LoadRootPath();
 
+        std::string ReadTextFile(
+            const std::filesystem::path& path);
+
+        uint16_t m_port;
         Socket m_listener;
         bool m_running = true;
+        std::filesystem::path m_rootPath;
     };
 }

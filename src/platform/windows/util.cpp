@@ -1,6 +1,7 @@
 #include "../../util.hpp"
-#include <windows.h>
+#ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 namespace appweeb
 {
@@ -19,3 +20,4 @@ namespace appweeb
     }
 }
 
+#endif
