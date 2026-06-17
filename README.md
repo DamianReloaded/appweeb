@@ -1,15 +1,14 @@
 # AppWeeb
 
-
 AppWeeb is a lightweight desktop application framework built around a simple idea:
 
 - Write your application entirely in HTML, CSS and JavaScript.
 - Serve those files locally from a native C++ executable.
 - Expose local APIs implemented in C++.
-- Store data using files and SQLite.
+- Store application data using files.
 - Avoid Electron, Node.js and large runtimes.
 
-The executable contains a small HTTP server that serves files from the application's directory and exposes local API endpoints to the frontend.
+The executable contains a small HTTP server that serves files from a configurable web root and exposes local API endpoints to the frontend.
 
 The browser becomes the user interface while C++ provides local services.
 
@@ -19,19 +18,25 @@ The browser becomes the user interface while C++ provides local services.
 - No external runtime requirements
 - Fast startup
 - Simple deployment
-- Native access to local files and databases
+- Cross-platform support
+- Native access to local files
 - Web technologies for UI development
+
+## Supported Platforms
+
+- Windows
+- Linux
 
 ## Current Features
 
 ### Static File Hosting
 
-Any file located within the application directory can be served through HTTP.
+Any file located within the configured web root can be served through HTTP.
 
 Example layout:
 
 ```text
-appweeb.exe
+appweeb
 
 index.html
 app.js
@@ -55,9 +60,51 @@ GET /video/intro.mp4
 
 Files are served directly from disk.
 
+### Configurable Web Root
+
+By default AppWeeb serves files from the directory containing the executable.
+
+Example:
+
+```text
+appweeb
+index.html
+app.js
+style.css
+```
+
+You may optionally create a `config.json` file beside the executable:
+
+```json
+{
+    "wwwroot": "../../wwwroot"
+}
+```
+
+The `wwwroot` value is resolved relative to the executable directory.
+
+Example:
+
+```text
+bin/
+    linux/
+        debug/
+            appweeb
+            config.json
+
+wwwroot/
+    index.html
+    app.js
+    style.css
+```
+
+In this case all file serving and file-writing APIs operate relative to the configured web root instead of the executable directory.
+
+If `config.json` does not exist, the `wwwroot` property is missing, or the configured path is invalid, AppWeeb falls back to the executable directory.
+
 ### Path Traversal Protection
 
-Requests are restricted to files inside the application directory.
+Requests are restricted to files inside the configured web root.
 
 Attempts such as:
 
@@ -65,7 +112,15 @@ Attempts such as:
 ../../Windows/System32
 ```
 
+or
+
+```text
+../../../etc/passwd
+```
+
 are rejected.
+
+This protection remains in effect even when using a custom `wwwroot` directory.
 
 ### JSON File Writing API
 
@@ -92,7 +147,7 @@ Response:
 }
 ```
 
-The specified file is written to disk, replacing any existing content.
+The specified file is written relative to the configured web root, replacing any existing content.
 
 ### Large Request Support
 
@@ -100,39 +155,16 @@ Requests are read using the HTTP `Content-Length` header.
 
 This allows multi-megabyte payloads rather than being limited to a single socket receive operation.
 
+### Cross-Platform Networking
+
+AppWeeb includes platform-specific socket implementations for:
+
+- Windows (WinSock2)
+- Linux (POSIX sockets)
+
+The public API remains platform-independent.
+
 ## Planned Features
-
-### SQLite API
-
-A generic SQLite endpoint is planned.
-
-Request:
-
-```json
-{
-    "database": "data/app.db",
-    "sql": "select * from Users"
-}
-```
-
-Response:
-
-```json
-{
-    "success": true,
-    "columns":
-    [
-        "Id",
-        "Name"
-    ],
-    "rows":
-    [
-        [1, "John"]
-    ]
-}
-```
-
-This allows the entire application backend to be implemented using SQLite and JavaScript.
 
 ### JSON File Reading
 
@@ -142,7 +174,7 @@ Endpoint:
 POST /api/read-json
 ```
 
-Read arbitrary JSON files stored within the application directory.
+Read arbitrary JSON files stored within the configured web root.
 
 ### Browser Auto Launch
 
@@ -161,7 +193,6 @@ Potential future endpoints:
 ```text
 /api/read-json
 /api/write-json
-/api/sql
 /api/list-files
 /api/delete-file
 /api/move-file
@@ -182,8 +213,6 @@ Browser
       +---- Static Files
       |
       +---- JSON APIs
-      |
-      +---- SQLite APIs
 ```
 
 ## Why Use This?
@@ -198,7 +227,6 @@ AppWeeb is useful when building:
 - Personal productivity tools
 - Offline desktop applications
 - Configuration editors
-- SQLite-based applications
 
 Instead of:
 
@@ -211,11 +239,10 @@ Electron
 the application consists of:
 
 ```text
-appweeb.exe
+appweeb
 html
 css
 js
-sqlite
 ```
 
 which can significantly reduce deployment size and complexity.
@@ -225,31 +252,97 @@ which can significantly reduce deployment size and complexity.
 Requirements:
 
 - C++23 compiler
-- WinSock2
-- GNU Make (or equivalent)
+- GNU Make
 
-Build:
+### Linux
+
+Debug build:
 
 ```bash
-make
+make PLATFORM=linux MODE=debug
 ```
 
-Clean:
+Release build:
+
+```bash
+make PLATFORM=linux MODE=release
+```
+
+### Windows
+
+Debug build:
+
+```bash
+make PLATFORM=windows MODE=debug
+```
+
+Release build:
+
+```bash
+make PLATFORM=windows MODE=release
+```
+
+### Clean
 
 ```bash
 make clean
 ```
 
-Rebuild:
+### Rebuild
 
 ```bash
 make rebuild
 ```
 
-Output:
+## Build Output
+
+Debug:
 
 ```text
-appweeb.exe
+bin/linux/debug/appweeb
+bin/windows/debug/appweeb.exe
+```
+
+Release:
+
+```text
+bin/linux/release/appweeb
+bin/windows/release/appweeb.exe
+```
+
+## VS Code
+
+The repository includes VS Code configurations for:
+
+- Linux IntelliSense
+- Windows IntelliSense
+- Linux debugging
+- Windows debugging
+- Linux build tasks
+- Windows build tasks
+
+The debugger automatically rebuilds the selected target before launching.
+
+Select the active IntelliSense configuration using:
+
+```text
+Ctrl+Shift+P
+C/C++: Select a Configuration
+```
+
+Select the desired debug target from:
+
+```text
+Run and Debug
+```
+
+Examples:
+
+```text
+Linux Debug
+Linux Release
+Windows Debug
+Windows Release
 ```
 
 ## Example Workflow
@@ -257,7 +350,7 @@ appweeb.exe
 Directory structure:
 
 ```text
-appweeb.exe
+appweeb
 
 index.html
 app.js
@@ -313,7 +406,9 @@ AppWeeb is currently a minimal proof-of-concept focused on:
 
 - HTTP serving
 - Local file access
-- Simple API endpoints
+- JSON APIs
+- Configurable web roots
+- Cross-platform support
 - Lightweight deployment
 
 The long-term goal is to provide a compact foundation for desktop applications built with web technologies while keeping the native backend as small and straightforward as possible.
