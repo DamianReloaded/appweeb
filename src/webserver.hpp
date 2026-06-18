@@ -19,9 +19,10 @@ namespace appweeb
         void Run();
         void Stop();
         
+        void LoadConfig();
         void SetRootPath(std::filesystem::path rootPath);
         std::filesystem::path GetRootPath();
-        std::filesystem::path LoadRootPath();
+        uint16_t GetHttpPort();
 
     private:
 

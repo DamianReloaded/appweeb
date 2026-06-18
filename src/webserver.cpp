@@ -178,6 +178,70 @@ namespace appweeb
     return request;
 }
 
+    static std::string ExtractJsonValue(
+        const std::string& text,
+        const std::string& key)
+    {
+        std::string pattern = "\"" + key + "\"";
+
+        auto pos = text.find(pattern);
+        if (pos == std::string::npos)
+        {
+            return {};
+        }
+
+        pos = text.find(':', pos);
+        if (pos == std::string::npos)
+        {
+            return {};
+        }
+
+        pos++;
+
+        // skip whitespace
+        while (pos < text.size() &&
+            (text[pos] == ' ' || text[pos] == '\t' || text[pos] == '\n' || text[pos] == '\r'))
+        {
+            pos++;
+        }
+
+        bool quoted = false;
+
+        if (pos < text.size() && text[pos] == '"')
+        {
+            quoted = true;
+            pos++;
+        }
+
+        size_t end = pos;
+
+        if (quoted)
+        {
+            end = text.find('"', pos);
+        }
+        else
+        {
+            while (end < text.size())
+            {
+                char c = text[end];
+
+                if (c == ',' || c == '}' || c == '\n' || c == '\r')
+                {
+                    break;
+                }
+
+                end++;
+            }
+        }
+
+        if (end == std::string::npos || end <= pos)
+        {
+            return {};
+        }
+
+        return text.substr(pos, end - pos);
+    }
+
     std::string WebServer::ExtractJsonString(
         std::string_view json,
         std::string_view property)
@@ -741,50 +805,59 @@ namespace appweeb
                 std::istreambuf_iterator<char>());
     }
 
-    std::filesystem::path WebServer::LoadRootPath()
+    void WebServer::LoadConfig()
     {
         auto root =
             m_rootPath.empty()
-                ? std::filesystem::weakly_canonical(
-                    GetRootPath())
-                : std::filesystem::weakly_canonical(
-                    m_rootPath);
+                ? std::filesystem::weakly_canonical(GetRootPath())
+                : std::filesystem::weakly_canonical(m_rootPath);
 
-        auto configPath =
-            root /
-            "config.json";
+        auto configPath = root / "config.json";
 
         if (!std::filesystem::exists(configPath))
         {
-            return root;
+            return;
         }
 
-        auto configText =
-            ReadTextFile(
-                configPath);
+        auto configText = ReadTextFile(configPath);
 
-        auto wwwroot =
-            ExtractJsonString(
-                configText,
-                "wwwroot");
+        // ----------------------------
+        // wwwroot
+        // ----------------------------
+        auto wwwroot = ExtractJsonValue(configText, "wwwroot");
 
-        if (wwwroot.empty())
+        if (!wwwroot.empty())
         {
-            return root;
+            auto configuredRoot =
+                std::filesystem::weakly_canonical(root / wwwroot);
+
+            if (std::filesystem::exists(configuredRoot))
+            {
+                m_rootPath = configuredRoot;
+            }
         }
 
-        auto configuredRoot =
-            std::filesystem::weakly_canonical(
-                root /
-                wwwroot);
+        // ----------------------------
+        // httpport
+        // ----------------------------
+        auto portStr = ExtractJsonValue(configText, "httpport");
 
-        if (!std::filesystem::exists(configuredRoot))
+        if (!portStr.empty())
         {
-            return root;
-        }
+            try
+            {
+                int port = std::stoi(portStr);
 
-        m_rootPath = configuredRoot;
-        return m_rootPath;
+                if (port > 0 && port <= 65535)
+                {
+                    m_port = static_cast<uint16_t>(port);
+                }
+            }
+            catch (...)
+            {
+                // ignore invalid values
+            }
+        }
     }
 
     void WebServer::SetRootPath(
@@ -798,6 +871,11 @@ namespace appweeb
     std::filesystem::path WebServer::GetRootPath()
     {
         return m_rootPath;
+    }
+
+    uint16_t WebServer::GetHttpPort()
+    {
+        return m_port;
     }
 
     bool WebServer::WriteBinaryFile(

@@ -24,18 +24,16 @@ int main()
         SIGTERM,
         SignalHandler);
 
-    std::cout
-        << "Open this URL in your browser: "
-        << "http://localhost:8080/\n";
-
     appweeb::WebServer server(8080);
 
-    auto path = server.LoadRootPath().string();
-    if (!path.length())
+    server.LoadConfig();
+    if (!server.GetRootPath().string().length())
     {
         server.SetRootPath("wwwroot");
     }
     std::cout <<"Root Path: " << server.GetRootPath() <<std::endl;
+
+    std::cout << "Open this URL in your browser: " << "http://localhost:" << server.GetHttpPort() <<"\n";
 
     while (!g_stopRequested.load(std::memory_order_relaxed))
     {
