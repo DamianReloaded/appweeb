@@ -26,7 +26,6 @@ The browser becomes the user interface while C++ provides local services.
 - [Planned Features](#planned-features)
   - [JSON File Reading](#json-file-reading)
   - [Browser Auto Launch](#browser-auto-launch)
-  - [Additional APIs](#additional-apis)
 - [Architecture](#architecture)
 - [Why Use This?](#why-use-this)
 - [Building](#building)
@@ -194,16 +193,6 @@ The public API remains platform-independent.
 
 ## Planned Features
 
-### JSON File Reading
-
-Endpoint:
-
-```text
-POST /api/read-json
-```
-
-Read arbitrary JSON files stored within the configured web root.
-
 ### Browser Auto Launch
 
 Automatically open:
@@ -213,18 +202,6 @@ http://localhost:8080
 ```
 
 when the application starts.
-
-### Additional APIs
-
-Potential future endpoints:
-
-```text
-/api/read-json
-/api/write-json
-/api/list-files
-/api/delete-file
-/api/move-file
-```
 
 ## Architecture
 
@@ -378,7 +355,7 @@ Windows Release
 Directory structure:
 
 ```text
-appweeb
+appweeb (executable)
 
 index.html
 app.js
@@ -391,40 +368,16 @@ data/
 JavaScript:
 
 ```javascript
-await fetch(
-    "/api/write-json",
-    {
-        method: "POST",
-        headers:
-        {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify(
-        {
-            path: "data/settings.json",
-            json: JSON.stringify(
-            {
-                theme: "dark",
-                width: 1280,
-                height: 720
-            })
-        })
-    });
-```
-
-Result:
-
-```text
-data/settings.json
-```
-
-contains:
-
-```json
+async function UploadFile(path, bytes)
 {
-    "theme": "dark",
-    "width": 1280,
-    "height": 720
+    const response = await fetch("/api/upload", {
+        method: "POST",
+        headers: {
+            "X-Path": path,
+            "Content-Type": "application/octet-stream"
+        },
+        body: bytes
+    });
 }
 ```
 
