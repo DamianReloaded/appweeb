@@ -23,7 +23,6 @@ The browser becomes the user interface while C++ provides local services.
   - [File Upload as Application Data Storage](#file-upload-as-application-data-storage)
   - [Custom Endpoints](#custom-endpoints)
   - [Cross-Platform](#cross-platform)
-- [Architecture](#architecture)
 - [Why Use This?](#why-use-this)
 - [Building](#building)
   - [Linux](#linux)
@@ -201,23 +200,6 @@ AppWeeb includes platform-specific socket implementations for:
 - Linux (POSIX sockets)
 
 The public API remains platform-independent.
-
-## Architecture
-
-```text
-Browser
-    |
-    | HTTP
-    v
-+-----------+
-| AppWeeb   |
-| WebServer |
-+-----------+
-      |
-      +---- Static Files
-      |
-      +---- JSON APIs
-```
 
 ## Why Use This?
 
