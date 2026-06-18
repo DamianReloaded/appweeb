@@ -158,7 +158,7 @@ POST /api/upload
 
 Request:
 
-```json
+```javascript
 {
         method: "POST",
         headers: {
