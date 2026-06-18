@@ -12,6 +12,33 @@ The executable contains a small HTTP server that serves files from a configurabl
 
 The browser becomes the user interface while C++ provides local services.
 
+## Index
+
+- [Goals](#goals)
+- [Supported Platforms](#supported-platforms)
+- [Current Features](#current-features)
+  - [Static File Hosting](#static-file-hosting)
+  - [Configurable Web Root](#configurable-web-root)
+  - [Path Traversal Protection](#path-traversal-protection)
+  - [JSON File Writing API](#json-file-writing-api)
+  - [Large Request Support](#large-request-support)
+  - [Cross-Platform Networking](#cross-platform-networking)
+- [Planned Features](#planned-features)
+  - [JSON File Reading](#json-file-reading)
+  - [Browser Auto Launch](#browser-auto-launch)
+  - [Additional APIs](#additional-apis)
+- [Architecture](#architecture)
+- [Why Use This?](#why-use-this)
+- [Building](#building)
+  - [Linux](#linux)
+  - [Windows](#windows)
+  - [Clean](#clean)
+  - [Rebuild](#rebuild)
+- [Build Output](#build-output)
+- [VS Code](#vs-code)
+- [Example Workflow](#example-workflow)
+- [Project Status](#project-status)
+
 ## Goals
 
 - Small executable size
