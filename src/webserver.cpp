@@ -25,8 +25,6 @@ namespace appweeb
 
     void WebServer::Run()
     {
-        m_rootPath = LoadRootPath();
-
         if (!m_listener.Listen(m_port))
         {
             return;
@@ -785,7 +783,8 @@ namespace appweeb
             return root;
         }
 
-        return configuredRoot;
+        m_rootPath = configuredRoot;
+        return m_rootPath;
     }
 
     void WebServer::SetRootPath(
@@ -794,6 +793,11 @@ namespace appweeb
         m_rootPath =
             std::filesystem::weakly_canonical(
                 std::move(rootPath));
+    }
+
+    std::filesystem::path WebServer::GetRootPath()
+    {
+        return m_rootPath;
     }
 
     bool WebServer::WriteBinaryFile(

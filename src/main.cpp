@@ -30,7 +30,12 @@ int main()
 
     appweeb::WebServer server(8080);
 
-    server.SetRootPath("wwwroot");
+    auto path = server.LoadRootPath().string();
+    if (!path.length())
+    {
+        server.SetRootPath("wwwroot");
+    }
+    std::cout <<"Root Path: " << server.GetRootPath() <<std::endl;
 
     while (!g_stopRequested.load(std::memory_order_relaxed))
     {
