@@ -20,6 +20,8 @@ namespace appweeb
         void Stop();
         
         void SetRootPath(std::filesystem::path rootPath);
+        std::filesystem::path GetRootPath();
+        std::filesystem::path LoadRootPath();
 
     private:
 
@@ -57,8 +59,6 @@ namespace appweeb
             Socket& client,
             bool success,
             std::string_view error = {});
-
-        std::filesystem::path LoadRootPath();
 
         std::string ReadTextFile(
             const std::filesystem::path& path);
