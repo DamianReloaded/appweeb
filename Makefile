@@ -8,7 +8,7 @@ ifeq ($(PLATFORM), linux)
 	DEPENDENCIES = 
 	LIBRARIES = 
 else ifeq ($(PLATFORM), windows)
-	DEFINES = 
+	DEFINES = _WIN32
 	DEPENDENCIES =  
 	LIBRARIES = ws2_32
 endif

@@ -1,4 +1,4 @@
-// src/platform/linux/socket.cpp
+#ifndef _WIN32
 
 #include "../../socket.hpp"
 #include <fcntl.h>
@@ -201,3 +201,4 @@ Socket Socket::Accept()
             m_impl->handle >= 0;
     }
 }
+#endif

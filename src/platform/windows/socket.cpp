@@ -97,13 +97,7 @@ namespace appweeb
                 m_impl->handle,
                 reinterpret_cast<sockaddr*>(&address),
                 sizeof(address)) == SOCKET_ERROR)
-        {
-        std::cout
-            << "Bind failed: "
-            << WSAGetLastError()
-            << " - Already running? Check the task manager."
-            << std::endl;		
-            
+        {            
             Close();
             return false;
         }
