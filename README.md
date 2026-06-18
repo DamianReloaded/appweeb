@@ -21,6 +21,7 @@ The browser becomes the user interface while C++ provides local services.
   - [Configurable Web Root](#configurable-web-root)
   - [File Writing API](#file-writing-api)
   - [File Upload as Application Data Storage](#file-upload-as-application-data-storage)
+  - [Custom Endpoints](#custom-endpoints)
   - [Cross-Platform](#cross-platform)
 - [Architecture](#architecture)
 - [Why Use This?](#why-use-this)
