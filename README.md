@@ -19,7 +19,7 @@ The browser becomes the user interface while C++ provides local services.
 - [Current Features](#current-features)
   - [Static File Hosting](#static-file-hosting)
   - [Configurable Web Root](#configurable-web-root)
-  - [File Writing API](#json-file-writing-api)
+  - [File Writing API](#file-writing-api)
   - [File Upload as Application Data Storage](#file-upload-as-application-data-storage)
   - [Cross-Platform](#cross-platform)
 - [Architecture](#architecture)
@@ -175,6 +175,22 @@ Typical workflow:
 - The bytes are uploaded using /api/upload
 - The file is stored under the configured web root
 - The json can then be retrieved from the server to list contents
+
+### Custom Endpoints
+
+AppWeeb allows arbitrary HTTP endpoints to be added directly to the C++ web server. These endpoints can implement any server-side logic required by the application like:
+
+- Database operations
+- External API / web service communication
+- Image or media generation
+- File processing
+- Authentication logic
+- Background task triggering
+etc.
+
+Since the server is fully native, each endpoint can execute arbitrary C++ code and interact directly with the filesystem, operating system APIs, or third-party services.
+
+This makes AppWeeb suitable not only for static file hosting and data storage, but also for building fully custom backend behavior tailored to a specific application.
 
 ### Cross-Platform
 
@@ -369,7 +385,7 @@ AppWeeb is currently a minimal proof-of-concept focused on:
 
 - HTTP serving
 - Local file access
-- JSON APIs
+- File upload APIs
 - Configurable web roots
 - Cross-platform support
 - Lightweight deployment
