@@ -77,7 +77,8 @@ You may optionally create a `config.json` file beside the executable:
 
 ```json
 {
-    "wwwroot": "../../wwwroot"
+	"wwwroot":"wwwroot",
+	"httpport":8080
 }
 ```
 
