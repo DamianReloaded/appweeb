@@ -1,3 +1,53 @@
+
+async function UploadFile(
+    path,
+    file)
+{
+    console.log(
+        "Uploading:",
+        file);
+
+    console.log(
+        "Name:",
+        file.name);
+
+    console.log(
+        "Size:",
+        file.size);
+
+    const bytes = await file.arrayBuffer();
+
+    const response =
+        await fetch(
+            "/api/write-file",
+            {
+                method: "POST",
+                headers:
+                {
+                    "X-Path":
+                        path,
+
+                    "Content-Type":
+                        "application/octet-stream"
+                },
+                body: bytes
+            });
+
+    const text =
+        await response.text();
+
+    try
+    {
+        return JSON.parse(
+            text);
+    }
+    catch
+    {
+        throw new Error(
+            text);
+    }
+}
+
 async function WriteJson(
     path,
     jsonText)
@@ -63,6 +113,103 @@ async function LoadSettings()
 }
 
 document
+    .getElementById("uploadButton")
+    .addEventListener(
+        "click",
+        async () =>
+        {
+            try
+            {
+                const button =
+                    document.getElementById(
+                        "uploadButton");
+
+                const fileInput =
+                    document.getElementById(
+                        "uploadFile");
+
+                if (
+                    fileInput.files.length === 0)
+                {
+                    SetResult(
+                        "Please select a file.");
+
+                    return;
+                }
+
+                const file =
+                    fileInput.files[0];
+
+                let path =
+                    document
+                        .getElementById(
+                            "uploadPath")
+                        .value
+                        .trim();
+
+                if (!path)
+                {
+                    path =
+                        "uploads/" +
+                        file.name;
+                }
+
+                button.disabled = true;
+
+                SetResult(
+                    "Uploading...");
+
+                const result =
+                    await UploadFile(
+                        path,
+                        file);
+
+                SetResult(
+                    JSON.stringify(
+                        result,
+                        null,
+                        4));
+            }
+            catch (error)
+            {
+                console.error(
+                    error);
+
+                SetResult(
+                    error.toString());
+            }
+            finally
+            {
+                document
+                    .getElementById(
+                        "uploadButton")
+                    .disabled = false;
+            }
+        });
+
+document
+    .getElementById("uploadFile")
+    .addEventListener(
+        "change",
+        event =>
+        {
+            const file =
+                event.target.files[0];
+
+            if (!file)
+            {
+                return;
+            }
+
+            document
+                .getElementById(
+                    "uploadPath")
+                .value =
+                    "uploads/" +
+                    file.name;
+        });
+
+document
     .getElementById("writeButton")
     .addEventListener(
         "click",
@@ -72,12 +219,14 @@ document
             {
                 const path =
                     document
-                        .getElementById("path")
+                        .getElementById(
+                            "path")
                         .value;
 
                 const jsonText =
                     document
-                        .getElementById("json")
+                        .getElementById(
+                            "json")
                         .value;
 
                 JSON.parse(
@@ -134,7 +283,8 @@ document
             }
 
             document
-                .getElementById("json")
+                .getElementById(
+                    "json")
                 .value =
                     JSON.stringify(
                         data,

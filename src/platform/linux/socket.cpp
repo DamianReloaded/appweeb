@@ -1,7 +1,7 @@
 // src/platform/linux/socket.cpp
 
 #include "../../socket.hpp"
-
+#include <fcntl.h>
 #include <arpa/inet.h>
 #include <cerrno>
 #include <cstring>
@@ -114,31 +114,56 @@ namespace appweeb
 
         return true;
     }
+    
+Socket Socket::Accept()
+{
+    int client =
+        accept(
+            m_impl->handle,
+            nullptr,
+            nullptr);
 
-    Socket Socket::Accept()
-    {
-        int client =
-            accept(
-                m_impl->handle,
-                nullptr,
-                nullptr);
+    std::cout
+        << "Accepted socket "
+        << client
+        << '\n';
 
-        return Socket(
-            reinterpret_cast<void*>(
-                static_cast<intptr_t>(
-                    client)));
-    }
+    int flags =
+        fcntl(client, F_GETFL, 0);
+
+    std::cout
+        << "Flags: "
+        << flags
+        << '\n';
+
+    return Socket(
+        reinterpret_cast<void*>(
+            static_cast<intptr_t>(client)));
+}
 
     int Socket::Receive(
         void* buffer,
         int size)
     {
-        return static_cast<int>(
-            recv(
-                m_impl->handle,
-                buffer,
-                static_cast<size_t>(size),
-                0));
+        int result =
+            static_cast<int>(
+                recv(
+                    m_impl->handle,
+                    buffer,
+                    static_cast<size_t>(size),
+                    0));
+
+        if (result < 0)
+        {
+            std::cout
+                << "recv failed: "
+                << errno
+                << " "
+                << std::strerror(errno)
+                << '\n';
+        }
+
+        return result;
     }
 
     int Socket::Send(
@@ -150,7 +175,7 @@ namespace appweeb
                 m_impl->handle,
                 buffer,
                 static_cast<size_t>(size),
-                0));
+                MSG_NOSIGNAL));
     }
 
     void Socket::Close()
