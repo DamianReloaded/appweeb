@@ -7,19 +7,15 @@
 
 namespace appweeb
 {
-
     constexpr int MAX_PATH = 260;
 
-    WebServer::WebServer(
-        uint16_t port)
-        : m_port(port)
+    WebServer::WebServer(uint16_t port) : m_port(port)
     {
     }
 
     void WebServer::Stop()
     {
         m_running = false;
-
         m_listener.Close();
     }
 
@@ -31,12 +27,9 @@ namespace appweeb
         }
 
         m_running = true;
-
         while (m_running)
         {
-            Socket client =
-                m_listener.Accept();
-
+            Socket client = m_listener.Accept();
             if (!m_running)
             {
                 break;
@@ -47,143 +40,80 @@ namespace appweeb
                 continue;
             }
 
-            HandleClient(
-                std::move(client));
+            HandleClient(std::move(client));
         }
     }
 
-    std::string WebServer::ReceiveRequest(
-    Socket& client)
-{
-    std::string request;
-
-    constexpr size_t ChunkSize =
-        16384;
-
-    size_t contentLength = 0;
-    bool headersParsed = false;
-
-    for (;;)
+    std::string WebServer::ReceiveRequest(Socket& client)
     {
-        char buffer[ChunkSize];
+        constexpr size_t ChunkSize = 16384;
+        std::string request;
+        size_t contentLength = 0;
+        bool headersParsed = false;
 
-        int bytes =
-            client.Receive(
-                buffer,
-                static_cast<int>(
-                    sizeof(buffer)));
-
-        if (bytes <= 0)
+        for (;;)
         {
-            break;
-        }
+            char buffer[ChunkSize];
+            int bytes = client.Receive(buffer, static_cast<int>(sizeof(buffer)));
 
-        request.append(
-            buffer,
-            bytes);
-
-        if (!headersParsed)
-        {
-            auto headerEnd =
-                request.find(
-                    "\r\n\r\n");
-
-            if (
-                headerEnd ==
-                std::string::npos)
-            {
-                continue;
-            }
-
-            headersParsed = true;
-
-            auto contentLengthPos =
-                request.find(
-                    "Content-Length:");
-
-            if (
-                contentLengthPos !=
-                std::string::npos)
-            {
-                contentLengthPos += 15;
-
-                while (
-                    contentLengthPos <
-                    request.size() &&
-                    request[
-                        contentLengthPos] == ' ')
-                {
-                    ++contentLengthPos;
-                }
-
-                auto lineEnd =
-                    request.find(
-                        "\r\n",
-                        contentLengthPos);
-
-                contentLength =
-                    static_cast<size_t>(
-                        std::stoull(
-                            request.substr(
-                                contentLengthPos,
-                                lineEnd -
-                                contentLengthPos)));
-            }
-            else
-            {
-                return request;
-            }
-
-            auto bodyStart =
-                headerEnd + 4;
-
-            size_t bodySize =
-                request.size() -
-                bodyStart;
-
-            if (bodySize==0)
-            {
-                
-            }
-
-            if (
-                bodySize >=
-                contentLength)
-            {
-                return request;
-            }
-        }
-
-        if (headersParsed)
-        {
-            auto bodyStart =
-                request.find(
-                    "\r\n\r\n");
-
-            bodyStart += 4;
-
-            size_t bodySize =
-                request.size() -
-                bodyStart;
-
-            if (
-                bodySize >=
-                contentLength)
+            if (bytes <= 0)
             {
                 break;
             }
+
+            request.append(buffer, bytes);
+
+            if (!headersParsed)
+            {
+                auto headerEnd = request.find("\r\n\r\n");
+                if (headerEnd == std::string::npos)
+                {
+                    continue;
+                }
+
+                headersParsed = true;
+                auto contentLengthPos = request.find("Content-Length:");
+                if (contentLengthPos != std::string::npos)
+                {
+                    contentLengthPos += 15;
+                    while (contentLengthPos < request.size() && request[contentLengthPos] == ' ')
+                    {
+                        ++contentLengthPos;
+                    }
+                    auto lineEnd = request.find("\r\n", contentLengthPos);
+                    contentLength =static_cast<size_t>(std::stoull(request.substr(contentLengthPos, lineEnd - contentLengthPos)));
+                }
+                else
+                {
+                    return request;
+                }
+
+                auto bodyStart = headerEnd + 4;
+                size_t bodySize = request.size() - bodyStart;
+                if (bodySize >= contentLength)
+                {
+                    return request;
+                }
+            }
+
+            if (headersParsed)
+            {
+                auto bodyStart = request.find("\r\n\r\n");
+                bodyStart += 4;
+                size_t bodySize = request.size() - bodyStart;
+                if (bodySize >= contentLength)
+                {
+                    break;
+                }
+            }
         }
+
+        return request;
     }
 
-    return request;
-}
-
-    static std::string ExtractJsonValue(
-        const std::string& text,
-        const std::string& key)
+    static std::string ExtractJsonValue(const std::string& text, const std::string& key)
     {
         std::string pattern = "\"" + key + "\"";
-
         auto pos = text.find(pattern);
         if (pos == std::string::npos)
         {
@@ -242,405 +172,101 @@ namespace appweeb
         return text.substr(pos, end - pos);
     }
 
-    std::string WebServer::ExtractJsonString(
-        std::string_view json,
-        std::string_view property)
-    {
-        std::string key =
-            "\"" +
-            std::string(property) +
-            "\"";
-
-        auto keyPos =
-            json.find(key);
-
-        if (
-            keyPos ==
-            std::string_view::npos)
-        {
-            return {};
-        }
-
-        auto colonPos =
-            json.find(
-                ':',
-                keyPos);
-
-        if (
-            colonPos ==
-            std::string_view::npos)
-        {
-            return {};
-        }
-
-        auto quotePos =
-            json.find(
-                '"',
-                colonPos);
-
-        if (
-            quotePos ==
-            std::string_view::npos)
-        {
-            return {};
-        }
-
-        ++quotePos;
-
-        std::string result;
-
-        bool escape = false;
-
-        for (
-            size_t i = quotePos;
-            i < json.size();
-            ++i)
-        {
-            char c =
-                json[i];
-
-            if (escape)
-            {
-                switch (c)
-                {
-                    case '\\':
-                        result += '\\';
-                        break;
-
-                    case '"':
-                        result += '"';
-                        break;
-
-                    case 'n':
-                        result += '\n';
-                        break;
-
-                    case 'r':
-                        result += '\r';
-                        break;
-
-                    case 't':
-                        result += '\t';
-                        break;
-
-                    default:
-                        result += c;
-                        break;
-                }
-
-                escape = false;
-                continue;
-            }
-
-            if (c == '\\')
-            {
-                escape = true;
-                continue;
-            }
-
-            if (c == '"')
-            {
-                break;
-            }
-
-            result += c;
-        }
-
-        return result;
-    }
-
-    bool WebServer::WriteTextFile(
-        const std::filesystem::path& path,
-        std::string_view content)
-    {
-        std::filesystem::create_directories(
-            path.parent_path());
-
-        std::ofstream file(
-            path,
-            std::ios::binary);
-
-        if (!file)
-        {
-            return false;
-        }
-
-        file.write(
-            content.data(),
-            static_cast<std::streamsize>(
-                content.size()));
-
-        return file.good();
-    }
-
-    void WebServer::SendJsonResponse(
-        Socket& client,
-        bool success,
-        std::string_view error)
+    void WebServer::SendJsonResponse(Socket& client, bool success, std::string_view error)
     {
         std::string json;
 
         if (success)
         {
-            json =
-                R"({"success":true})";
+            json = R"({"success":true})";
         }
         else
         {
-            json =
-                "{\"success\":false,"
-                "\"error\":\"" +
-                std::string(error) +
-                "\"}";
+            json = "{\"success\":false," "\"error\":\"" + std::string(error) + "\"}";
         }
 
-        SendResponse(
-            client,
-            200,
-            "application/json",
-            json.data(),
-            json.size());
+        SendResponse(client, 200, "application/json", json.data(), json.size());
     }
 
-    void WebServer::HandleClient(
-        Socket client)
+    void WebServer::HandleClient(Socket client)
     {
-        std::string request =
-            ReceiveRequest(
-                client);
-
+        std::string request = ReceiveRequest(client);
         if (request.empty())
         {
             return;
         }
 
-        auto lineEnd =
-            request.find(
-                "\r\n");
-
+        auto lineEnd = request.find("\r\n");
         if (lineEnd == std::string::npos)
         {
             return;
         }
 
-        std::string firstLine =
-            request.substr(
-                0,
-                lineEnd);
-
-
-        auto firstSpace =
-            firstLine.find(
-                ' ');
-
-        auto secondSpace =
-            firstLine.find(
-                ' ',
-                firstSpace + 1);
-
-        if (
-            firstSpace == std::string::npos ||
-            secondSpace == std::string::npos)
+        std::string firstLine = request.substr(0, lineEnd);
+        auto firstSpace = firstLine.find(' ');
+        auto secondSpace = firstLine.find(' ', firstSpace + 1);
+        if (firstSpace == std::string::npos || secondSpace == std::string::npos)
         {
             return;
         }
 
-        std::string method =
-            firstLine.substr(
-                0,
-                firstSpace);
-
-        std::string url =
-            firstLine.substr(
-                firstSpace + 1,
-                secondSpace - firstSpace - 1);
-
-        auto bodyPos =
-            request.find(
-                "\r\n\r\n");
-
+        std::string method = firstLine.substr(0, firstSpace);
+        std::string url = firstLine.substr(firstSpace + 1, secondSpace - firstSpace - 1);
+        auto bodyPos = request.find("\r\n\r\n");
         std::string body;
-
         if (bodyPos != std::string::npos)
         {
-            body =
-                request.substr(
-                    bodyPos + 4);
+            body = request.substr(bodyPos + 4);
         }
 
-        //
-        // POST /api/write-json
-        //
-        if (
-            method == "POST" &&
-            url == "/api/write-json")
+        if (method == "POST" && url == "/api/upload")
         {
-            auto relativePath =
-                ExtractJsonString(
-                    body,
-                    "path");
-
-            auto jsonText =
-                ExtractJsonString(
-                    body,
-                    "json");
-
-            auto path =
-                ResolvePath(
-                    relativePath);
-
+            auto relativePath = GetHeaderValue(request, "X-Path");
+            auto path = ResolvePath(relativePath);
             if (path.empty())
             {
-                SendJsonResponse(
-                    client,
-                    false,
-                    "Invalid path");
-
+                SendJsonResponse(client, false, "Invalid path");
                 return;
             }
-
-            if (
-                WriteTextFile(
-                    path,
-                    jsonText))
-            {
-                SendJsonResponse(
-                    client,
-                    true);
-
-                return;
-            }
-
-            SendJsonResponse(
-                client,
-                false,
-                "Failed to write file");
-
-            return;
-        }
-
-        //
-        // POST /api/write-file
-        //
-        if (
-            method == "POST" &&
-            url == "/api/write-file")
-        {
-            auto relativePath =
-                GetHeaderValue(
-                    request,
-                    "X-Path");
-
-            auto path =
-                ResolvePath(
-                    relativePath);
-
-            if (path.empty())
-            {
-                SendJsonResponse(
-                    client,
-                    false,
-                    "Invalid path");
-
-                return;
-            }
-
-            if (
-                WriteBinaryFile(
-                    path,
-                    body.data(),
-                    body.size()))
-            {
-                SendJsonResponse(
-                    client,
-                    true);
-
-                return;
-            }
-
-            SendJsonResponse(
-                client,
-                false,
-                "Failed to write file");
-
+            bool success = WriteBinaryFile(path, body.data(), body.size());
+            SendJsonResponse(client, success, success ? "" : "Failed to write file");
             return;
         }
 
         //
         // Static file handling
         //
-        auto path =
-            ResolvePath(
-                url);
-
-        if (
-            path.empty() ||
-            !std::filesystem::exists(
-                path))
+        auto path =ResolvePath(url);
+        if (path.empty() || !std::filesystem::exists(path))
         {
-            constexpr char text[] =
-                "{\"HttpError\":\"404 Not Found\"}";
-
-            SendResponse(
-                client,
-                404,
-                "application/json",
-                text,
-                sizeof(text) - 1);
-
+            constexpr char text[] = "{\"HttpError\":\"404 Not Found\"}";
+            SendResponse(client, 404, "application/json", text, sizeof(text) - 1);
             return;
         }
 
-        auto data =
-            ReadFile(
-                path);
-
-        SendResponse(
-            client,
-            200,
-            GetMimeType(
-                path),
-            data.data(),
-            data.size());
+        auto data = ReadFile(path);
+        SendResponse(client, 200, GetMimeType(path), data.data(), data.size());
     }
 
-    std::filesystem::path WebServer::ResolvePath(
-        std::string_view url)
+    std::filesystem::path WebServer::ResolvePath(std::string_view url)
     {
-        auto root =
-            std::filesystem::weakly_canonical(
-                m_rootPath);
+        auto root = std::filesystem::weakly_canonical(m_rootPath);
 
         std::string relative(url);
 
-        if (
-            relative.empty() ||
-            relative == "/")
+        if (relative.empty() || relative == "/")
         {
-            relative =
-                "/index.html";
+            relative = "/index.html";
         }
 
-        while (
-            !relative.empty() &&
-            relative.front() == '/')
+        while (!relative.empty() && relative.front() == '/')
         {
-            relative.erase(
-                relative.begin());
+            relative.erase(relative.begin());
         }
 
-        auto candidate =
-            std::filesystem::weakly_canonical(
-                root / relative);
-
-        auto relativePath =
-            std::filesystem::relative(
-                candidate,
-                root);
-
-        if (
-            relativePath.empty() ||
-            relativePath.string().starts_with(".."))
+        auto candidate = std::filesystem::weakly_canonical(root / relative);
+        auto relativePath = std::filesystem::relative(candidate, root);
+        if (relativePath.empty() || relativePath.string().starts_with(".."))
         {
             return {};
         }
@@ -648,47 +274,24 @@ namespace appweeb
         return candidate;
     }
 
-    std::vector<std::byte> WebServer::ReadFile(
-        const std::filesystem::path& path)
+    std::vector<std::byte> WebServer::ReadFile(const std::filesystem::path& path)
     {
-        std::ifstream file(
-            path,
-            std::ios::binary);
-
+        std::ifstream file(path, std::ios::binary);
         if (!file)
         {
             return {};
         }
-
-        file.seekg(
-            0,
-            std::ios::end);
-
-        auto size =
-            static_cast<size_t>(
-                file.tellg());
-
-        file.seekg(
-            0,
-            std::ios::beg);
-
-        std::vector<std::byte> data(
-            size);
-
-        file.read(
-            reinterpret_cast<char*>(
-                data.data()),
-            static_cast<std::streamsize>(
-                size));
-
+        file.seekg(0, std::ios::end);
+        auto size = static_cast<size_t>(file.tellg());
+        file.seekg(0, std::ios::beg);
+        std::vector<std::byte> data(size);
+        file.read(reinterpret_cast<char*>(data.data()), static_cast<std::streamsize>(size));
         return data;
     }
 
-    std::string WebServer::GetMimeType(
-        const std::filesystem::path& path)
+    std::string WebServer::GetMimeType(const std::filesystem::path& path)
     {
-        auto ext =
-            path.extension().string();
+        auto ext = path.extension().string();
 
         if (ext == ".html")
         {
@@ -715,8 +318,7 @@ namespace appweeb
             return "image/png";
         }
 
-        if (ext == ".jpg" ||
-            ext == ".jpeg")
+        if (ext == ".jpg" || ext == ".jpeg")
         {
             return "image/jpeg";
         }
@@ -739,98 +341,49 @@ namespace appweeb
         return "application/octet-stream";
     }
 
-    void WebServer::SendResponse(
-        Socket& client,
-        int statusCode,
-        std::string_view contentType,
-        const void* data,
-        size_t size)
+    void WebServer::SendResponse(Socket& client, int statusCode, std::string_view contentType, const void* data, size_t size)
     {
         std::ostringstream header;
-
-        header
-            << "HTTP/1.1 "
-            << statusCode
-            << (statusCode == 200
-                ? " OK"
-                : " Not Found")
-            << "\r\n";
-
-        header
-            << "Content-Type: "
-            << contentType
-            << "\r\n";
-
-        header
-            << "Content-Length: "
-            << size
-            << "\r\n";
-
-        header
-            << "Connection: close\r\n";
-
-        header
-            << "\r\n";
-
-        auto headerText =
-            header.str();
-
-        client.Send(
-            headerText.data(),
-            static_cast<int>(
-                headerText.size()));
-
+        header << "HTTP/1.1 " << statusCode << (statusCode == 200 ? " OK" : " Not Found") << "\r\n";
+        header << "Content-Type: " << contentType << "\r\n";
+        header << "Content-Length: " << size << "\r\n";
+        header << "Connection: close\r\n";
+        header << "\r\n";
+        auto headerText = header.str();
+        client.Send(headerText.data(),static_cast<int>(headerText.size()));
         if (size > 0)
         {
-            client.Send(
-                data,
-                static_cast<int>(
-                    size));
+            client.Send(data, static_cast<int>(size));
         }
     }
 
-    std::string WebServer::ReadTextFile(
-        const std::filesystem::path& path)
+    std::string WebServer::ReadTextFile(const std::filesystem::path& path)
     {
         std::ifstream file(path);
-
         if (!file)
         {
             return {};
         }
-
-        return
-            std::string(
-                std::istreambuf_iterator<char>(file),
-                std::istreambuf_iterator<char>());
+        return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
     }
 
     void WebServer::LoadConfig()
     {
-        auto root =
-            m_rootPath.empty()
-                ? std::filesystem::weakly_canonical(GetRootPath())
-                : std::filesystem::weakly_canonical(m_rootPath);
-
+        auto root = m_rootPath.empty() ? std::filesystem::weakly_canonical(GetRootPath()) : std::filesystem::weakly_canonical(m_rootPath);
         auto configPath = root / "config.json";
-
         if (!std::filesystem::exists(configPath))
         {
             return;
         }
-
         auto configText = ReadTextFile(configPath);
 
         // ----------------------------
         // wwwroot
         // ----------------------------
         auto wwwroot = ExtractJsonValue(configText, "wwwroot");
-
         if (!wwwroot.empty())
         {
-            auto configuredRoot =
-                std::filesystem::weakly_canonical(root / wwwroot);
-
+            auto configuredRoot = std::filesystem::weakly_canonical(root / wwwroot);
             if (std::filesystem::exists(configuredRoot))
             {
                 m_rootPath = configuredRoot;
@@ -841,13 +394,11 @@ namespace appweeb
         // httpport
         // ----------------------------
         auto portStr = ExtractJsonValue(configText, "httpport");
-
         if (!portStr.empty())
         {
             try
             {
                 int port = std::stoi(portStr);
-
                 if (port > 0 && port <= 65535)
                 {
                     m_port = static_cast<uint16_t>(port);
@@ -860,12 +411,9 @@ namespace appweeb
         }
     }
 
-    void WebServer::SetRootPath(
-        std::filesystem::path rootPath)
+    void WebServer::SetRootPath(std::filesystem::path rootPath)
     {
-        m_rootPath =
-            std::filesystem::weakly_canonical(
-                std::move(rootPath));
+        m_rootPath = std::filesystem::weakly_canonical(std::move(rootPath));
     }
 
     std::filesystem::path WebServer::GetRootPath()
@@ -878,121 +426,63 @@ namespace appweeb
         return m_port;
     }
 
-    bool WebServer::WriteBinaryFile(
-        const std::filesystem::path& path,
-        const void* data,
-        size_t size)
+    bool WebServer::WriteBinaryFile(const std::filesystem::path& path, const void* data, size_t size)
     {
-        std::filesystem::create_directories(
-            path.parent_path());
-
-        std::ofstream file(
-            path,
-            std::ios::binary);
-
+        std::filesystem::create_directories(path.parent_path());
+        std::ofstream file(path, std::ios::binary);
         if (!file)
         {
             return false;
         }
-
-        file.write(
-            static_cast<const char*>(data),
-            static_cast<std::streamsize>(size));
-
+        file.write(static_cast<const char*>(data), static_cast<std::streamsize>(size));
         return file.good();
     }
 
-    std::string WebServer::GetHeaderValue(
-        std::string_view request,
-        std::string_view headerName)
+    std::string WebServer::GetHeaderValue(std::string_view request, std::string_view headerName)
     {
-        auto headerEnd =
-            request.find(
-                "\r\n\r\n");
-
+        auto headerEnd = request.find("\r\n\r\n");
         if (headerEnd == std::string_view::npos)
         {
             return {};
         }
 
         std::string target;
-
-        target.reserve(
-            headerName.size());
-
+        target.reserve(headerName.size());
         for (char c : headerName)
         {
-            target.push_back(
-                static_cast<char>(
-                    std::tolower(
-                        static_cast<unsigned char>(c))));
+            target.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
         }
 
         size_t lineStart = 0;
-
         while (lineStart < headerEnd)
         {
-            auto lineEnd =
-                request.find(
-                    "\r\n",
-                    lineStart);
-
-            if (
-                lineEnd == std::string_view::npos ||
-                lineEnd > headerEnd)
+            auto lineEnd = request.find("\r\n", lineStart);
+            if (lineEnd == std::string_view::npos || lineEnd > headerEnd)
             {
                 break;
             }
 
-            auto colonPos =
-                request.find(
-                    ':',
-                    lineStart);
-
-            if (
-                colonPos != std::string_view::npos &&
-                colonPos < lineEnd)
+            auto colonPos = request.find(':', lineStart);
+            if (colonPos != std::string_view::npos && colonPos < lineEnd)
             {
                 std::string currentName;
-
-                currentName.reserve(
-                    colonPos - lineStart);
-
-                for (
-                    size_t i = lineStart;
-                    i < colonPos;
-                    ++i)
+                currentName.reserve(colonPos - lineStart);
+                for (size_t i = lineStart; i < colonPos; ++i)
                 {
-                    currentName.push_back(
-                        static_cast<char>(
-                            std::tolower(
-                                static_cast<unsigned char>(
-                                    request[i]))));
+                    currentName.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(request[i]))));
                 }
 
                 if (currentName == target)
                 {
-                    size_t valueStart =
-                        colonPos + 1;
-
-                    while (
-                        valueStart < lineEnd &&
-                        std::isspace(
-                            static_cast<unsigned char>(
-                                request[valueStart])))
+                    size_t valueStart = colonPos + 1;
+                    while (valueStart < lineEnd && std::isspace(static_cast<unsigned char>(request[valueStart])))
                     {
                         ++valueStart;
                     }
-
-                    return std::string(
-                        request.substr(
-                            valueStart,
-                            lineEnd - valueStart));
+                    return std::string(request.substr(valueStart, lineEnd - valueStart));
                 }
             }
-
-            lineStart =
-                lineEnd + 2;
+            lineStart = lineEnd + 2;
         }
 
         return {};
