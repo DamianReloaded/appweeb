@@ -29,7 +29,7 @@ async function LoadSettings()
     const output = document.getElementById("settings");
     try
     {
-        const response = await fetch("/data/settings.json");
+        const response = await fetch("data/settings.json");
         if (!response.ok)
         {
             output.textContent = "settings.json not found";
