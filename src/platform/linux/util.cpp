@@ -1,4 +1,4 @@
-// src/platform/linux/util.cpp
+#ifndef _WIN32
 
 #include "../../util.hpp"
 
@@ -29,3 +29,5 @@ namespace appweeb
             .parent_path();
     }
 }
+
+#endif

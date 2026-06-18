@@ -67,9 +67,6 @@ namespace appweeb
 
     for (;;)
     {
-        std::cout
-            << "Waiting for recv...\n";
-
         char buffer[ChunkSize];
 
         int bytes =
@@ -77,11 +74,6 @@ namespace appweeb
                 buffer,
                 static_cast<int>(
                     sizeof(buffer)));
-
-        std::cout
-            << "recv returned "
-            << bytes
-            << '\n';
 
         if (bytes <= 0)
         {
@@ -91,13 +83,6 @@ namespace appweeb
         request.append(
             buffer,
             bytes);
-
-        std::cout
-            << "Request size: "
-            << request.size()
-            << '\n';
-
-        std::cout << request <<std::endl;
 
         if (!headersParsed)
         {
@@ -113,9 +98,6 @@ namespace appweeb
             }
 
             headersParsed = true;
-
-            std::cout
-                << "Headers complete\n";
 
             auto contentLengthPos =
                 request.find(
@@ -148,17 +130,9 @@ namespace appweeb
                                 contentLengthPos,
                                 lineEnd -
                                 contentLengthPos)));
-
-                std::cout
-                    << "Content-Length: "
-                    << contentLength
-                    << '\n';
             }
             else
             {
-                std::cout
-                    << "No Content-Length header\n";
-
                 return request;
             }
 
@@ -169,11 +143,6 @@ namespace appweeb
                 request.size() -
                 bodyStart;
 
-            std::cout
-                << "Initial body size: "
-                << bodySize
-                << '\n';
-
             if (bodySize==0)
             {
                 
@@ -183,9 +152,6 @@ namespace appweeb
                 bodySize >=
                 contentLength)
             {
-                std::cout
-                    << "Request complete\n";
-
                 return request;
             }
         }
@@ -202,20 +168,10 @@ namespace appweeb
                 request.size() -
                 bodyStart;
 
-            std::cout
-                << "Body size: "
-                << bodySize
-                << " / "
-                << contentLength
-                << '\n';
-
             if (
                 bodySize >=
                 contentLength)
             {
-                std::cout
-                    << "Request complete\n";
-
                 break;
             }
         }
@@ -410,10 +366,6 @@ namespace appweeb
                 0,
                 lineEnd);
 
-        std::cout
-            << "Request: "
-            << firstLine
-            << '\n';
 
         auto firstSpace =
             firstLine.find(
@@ -517,16 +469,6 @@ namespace appweeb
                     request,
                     "X-Path");
 
-            std::cout
-                << "Upload path: ["
-                << relativePath
-                << "]\n";
-
-            std::cout
-                << "Upload size: "
-                << body.size()
-                << " bytes\n";
-
             auto path =
                 ResolvePath(
                     relativePath);
@@ -541,20 +483,12 @@ namespace appweeb
                 return;
             }
 
-            std::cout
-                << "Resolved path: "
-                << path.string()
-                << '\n';
-
             if (
                 WriteBinaryFile(
                     path,
                     body.data(),
                     body.size()))
             {
-                std::cout
-                    << "Sending upload response\n";
-
                 SendJsonResponse(
                     client,
                     true);
