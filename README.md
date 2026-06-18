@@ -24,7 +24,6 @@ The browser becomes the user interface while C++ provides local services.
   - [Large Request Support](#large-request-support)
   - [Cross-Platform Networking](#cross-platform-networking)
 - [Planned Features](#planned-features)
-  - [JSON File Reading](#json-file-reading)
   - [Browser Auto Launch](#browser-auto-launch)
 - [Architecture](#architecture)
 - [Why Use This?](#why-use-this)
