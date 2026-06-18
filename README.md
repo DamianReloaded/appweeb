@@ -153,16 +153,20 @@ This protection remains in effect even when using a custom `wwwroot` directory.
 Endpoint:
 
 ```text
-POST /api/write-json
+POST /api/upload
 ```
 
 Request:
 
 ```json
 {
-    "path": "data/settings.json",
-    "json": "{\"theme\":\"dark\"}"
-}
+        method: "POST",
+        headers: {
+            "X-Path": path,
+            "Content-Type": "application/octet-stream"
+        },
+        body: fileBytes
+    }
 ```
 
 Response:
@@ -367,7 +371,7 @@ data/
 JavaScript:
 
 ```javascript
-async function UploadFile(path, bytes)
+async function UploadFile(path, fileBytes)
 {
     const response = await fetch("/api/upload", {
         method: "POST",
@@ -375,7 +379,7 @@ async function UploadFile(path, bytes)
             "X-Path": path,
             "Content-Type": "application/octet-stream"
         },
-        body: bytes
+        body: fileBytes
     });
 }
 ```
