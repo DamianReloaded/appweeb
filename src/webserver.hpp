@@ -42,7 +42,7 @@ namespace appweeb
         void HandleClient(
             Socket client);
 
-        static std::string ReceiveRequest(
+        std::string ReceiveRequest(
             Socket& client);
 
         static std::string ExtractJsonString(
@@ -62,6 +62,15 @@ namespace appweeb
 
         std::string ReadTextFile(
             const std::filesystem::path& path);
+
+        bool WriteBinaryFile(
+            const std::filesystem::path& path,
+            const void* data,
+            size_t size);
+
+        std::string GetHeaderValue(
+            std::string_view request,
+            std::string_view headerName);
 
         uint16_t m_port;
         Socket m_listener;
