@@ -92,22 +92,27 @@ By default AppWeeb serves files from the directory containing the executable.
 Example:
 
 ```text
-appweeb
-index.html
-app.js
-style.css
+(Application files)
+> appweeb
+> config.json (optional)
+
+(Your content files)
+> index.html
+> app.js
+> style.css
 ```
 
 You may optionally create a `config.json` file beside the executable:
 
-```json
+```javascript
+// config.json
 {
-	"wwwroot":"wwwroot",
+	"wwwroot":"../../wwwroot",
 	"httpport":8080
 }
 ```
 
-The `wwwroot` value is resolved relative to the executable directory.
+The `wwwroot` value in config.json can be set to any location
 
 Example:
 
@@ -126,27 +131,7 @@ wwwroot/
 
 In this case all file serving and file-writing APIs operate relative to the configured web root instead of the executable directory.
 
-If `config.json` does not exist, the `wwwroot` property is missing, or the configured path is invalid, AppWeeb falls back to the executable directory.
-
-### Path Traversal Protection
-
-Requests are restricted to files inside the configured web root.
-
-Attempts such as:
-
-```text
-../../Windows/System32
-```
-
-or
-
-```text
-../../../etc/passwd
-```
-
-are rejected.
-
-This protection remains in effect even when using a custom `wwwroot` directory.
+If `config.json` does not exist, the `wwwroot` property is missing, or the configured path is invalid, AppWeeb falls back to the executable directory or any value hardcoded in the application using [WebServer.SetRootPath].
 
 ### JSON File Writing API
 
