@@ -381,10 +381,21 @@ namespace appweeb
         // wwwroot
         // ----------------------------
         auto wwwroot = ExtractJsonValue(configText, "wwwroot");
+
         if (!wwwroot.empty())
         {
             auto configuredRoot = std::filesystem::weakly_canonical(root / wwwroot);
-            if (std::filesystem::exists(configuredRoot))
+            std::error_code ec;
+            std::filesystem::create_directories(configuredRoot, ec);
+            if (ec)
+            {
+                // Failed to create directory → fallback
+                m_rootPath = root;
+
+                // Optional: log or print error
+                std::cerr << "Failed to create wwwroot: " << configuredRoot << " | using application directory instead\n";
+            }
+            else
             {
                 m_rootPath = configuredRoot;
             }
