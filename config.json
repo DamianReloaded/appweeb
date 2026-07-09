@@ -1,5 +1,5 @@
 {
 	"wwwroot":"wwwroot",
 	"httpport":8080,
-	"pluginDir":"bin/windows/debug/plugins",
+	"pluginDir":"bin/linux/debug/plugins"
 }

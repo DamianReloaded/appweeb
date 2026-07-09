@@ -30,7 +30,7 @@ INC_DIR += $(PRJ_DIR)/lib
 # Format libraries and includes as parameters for the compiler
 CLIBS := $(foreach LIB,$(LIBRARIES),-l$(LIB))
 CINCS := $(foreach INC,$(INC_DIR),-I$(INC))
-CC = g++
+CC = g++-16
 
 # Compiler flags
 CFLAGS = -Wall $(CINCS) -Wno-deprecated-declarations -std=c++26 -Werror -MMD -MP -Wfatal-errors -Wextra

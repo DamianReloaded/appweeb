@@ -11,11 +11,17 @@ INC_DIR := ../../include
 INC_DIR += ../../src
 INC_DIR += ../../lib
 
-CC = g++
+CC = g++-16
 
 CINCS := $(foreach INC,$(INC_DIR),-I$(INC))
 
 CFLAGS = -Wall $(CINCS) -std=c++26 -Werror -MMD -MP -Wextra
+
+ifeq ($(PLATFORM), windows)
+    SHARED_EXT = dll
+else ifeq ($(PLATFORM), linux)
+    SHARED_EXT = so
+endif
 
 ifeq ($(MODE), release)
     CFLAGS += -O3
@@ -28,7 +34,7 @@ SRC := $(wildcard $(SRC_DIR)/*.cpp)
 OBJ := $(patsubst %.cpp,$(OBJ_DIR)/%.o,$(SRC))
 DEP := $(OBJ:.o=.d)
 
-TARGET = $(BIN_DIR)/upload.dll
+TARGET = $(BIN_DIR)/$(PROJECT).$(SHARED_EXT)
 
 all: $(TARGET)
 
