@@ -1,6 +1,6 @@
 #ifndef _WIN32
 
-#include "../../socket.hpp"
+#include <socket.hpp>
 #include <fcntl.h>
 #include <arpa/inet.h>
 #include <cerrno>

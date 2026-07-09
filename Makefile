@@ -2,6 +2,7 @@ PROJECT := appweeb
 MODE ?= debug
 PLATFORM ?= windows
 TARGET_NAME = $(PROJECT)
+PLUGIN_DIR = plugins/upload
 
 ifeq ($(PLATFORM), linux)
 	DEFINES = 
@@ -22,8 +23,9 @@ OBJ_DIR = $(PRJ_DIR)bin/$(PLATFORM)/obj/$(MODE)/$(TARGET_NAME)
 DLL_DIR = $(PRJ_DIR)lib/bin/$(PLATFORM)/$(MODE)
 
 # Include directories
-INC_DIR := $(PRJ_DIR)/src 
-INC_DIR += $(PRJ_DIR)lib
+INC_DIR := $(PRJ_DIR)/include
+INC_DIR += $(PRJ_DIR)/src
+INC_DIR += $(PRJ_DIR)/lib
 
 # Format libraries and includes as parameters for the compiler
 CLIBS := $(foreach LIB,$(LIBRARIES),-l$(LIB))
@@ -31,7 +33,7 @@ CINCS := $(foreach INC,$(INC_DIR),-I$(INC))
 CC = g++
 
 # Compiler flags
-CFLAGS = -Wall $(CINCS) -Wno-deprecated-declarations -std=c++23 -Werror -MMD -MP -Wfatal-errors -Wextra
+CFLAGS = -Wall $(CINCS) -Wno-deprecated-declarations -std=c++26 -Werror -MMD -MP -Wfatal-errors -Wextra
 ifeq ($(MODE), release)
 	CFLAGS += --static -static-libgcc -static-libstdc++ -Wno-error=free-nonheap-object -O3 -Wl,--as-needed
 else
@@ -46,9 +48,12 @@ SRC += $(wildcard $(SRC_DIR)/platform/$(PLATFORM)/*.cpp)
 OBJ := $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SRC))
 DEP := $(OBJ:.o=.d)
 
-.PHONY: all clean run rebuild check
+.PHONY: all clean run rebuild check plugins
 
-all: $(BIN_DIR)/$(TARGET_NAME) check
+all: plugins $(BIN_DIR)/$(TARGET_NAME) check
+
+plugins:
+	$(MAKE) -C $(PLUGIN_DIR) MODE=$(MODE) PLATFORM=$(PLATFORM)
 
 $(BIN_DIR)/$(TARGET_NAME): $(OBJ)
 	@mkdir -p $(BIN_DIR)
@@ -66,8 +71,8 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp | $(OBJ_DIR)
 	$(CC) $(CFLAGS) $(foreach DEF,$(DEFINES),-D$(DEF)) -c -o $@ -MMD -MP $<
 
 clean:
-	$(foreach LIB,$(DEPENDENCIES),make -C $(DEP_DIR)/$(LIB) clean MODE=$(MODE);)
-	# Remove object files and binaries
+	$(foreach LIB,$(DEPENDENCIES),$(MAKE) -C $(DEP_DIR)/$(LIB) clean MODE=$(MODE) PLATFORM=$(PLATFORM);)
+	$(MAKE) -C $(PLUGIN_DIR) clean MODE=$(MODE) PLATFORM=$(PLATFORM)
 	@rm -rf $(OBJ_DIR)
 	@rm -rf $(BIN_DIR)
 

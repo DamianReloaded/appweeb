@@ -31,7 +31,6 @@ int main()
     {
         server.SetRootPath("wwwroot");
     }
-    std::cout <<"Root Path: " << server.GetRootPath() <<std::endl;
 
     std::cout << "Open this URL in your browser: " << "http://localhost:" << server.GetHttpPort() <<"\n";
 
