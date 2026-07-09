@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
+#include <thread>
 #include <wchar.h>
 
 namespace appweeb
@@ -30,17 +31,14 @@ namespace appweeb
         while (m_running)
         {
             Socket client = m_listener.Accept();
-            if (!m_running)
-            {
-                break;
-            }
 
             if (!client.IsValid())
-            {
                 continue;
-            }
 
-            HandleClient(std::move(client));
+            std::thread(
+                &WebServer::HandleClient,
+                this,
+                std::move(client)).detach();
         }
     }
 
