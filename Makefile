@@ -3,11 +3,13 @@ MODE ?= debug
 PLATFORM ?= windows
 TARGET_NAME = $(PROJECT)
 PLUGIN_DIR = plugins/upload
+CC = g++
 
 ifeq ($(PLATFORM), linux)
 	DEFINES = 
 	DEPENDENCIES = 
 	LIBRARIES = 
+	CC := g++-16
 else ifeq ($(PLATFORM), windows)
 	DEFINES = _WIN32
 	DEPENDENCIES =  
@@ -30,7 +32,6 @@ INC_DIR += $(PRJ_DIR)/lib
 # Format libraries and includes as parameters for the compiler
 CLIBS := $(foreach LIB,$(LIBRARIES),-l$(LIB))
 CINCS := $(foreach INC,$(INC_DIR),-I$(INC))
-CC = g++-16
 
 # Compiler flags
 CFLAGS = -Wall $(CINCS) -Wno-deprecated-declarations -std=c++26 -Werror -MMD -MP -Wfatal-errors -Wextra

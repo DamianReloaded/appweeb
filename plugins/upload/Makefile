@@ -11,7 +11,7 @@ INC_DIR := ../../include
 INC_DIR += ../../src
 INC_DIR += ../../lib
 
-CC = g++-16
+CC = g++
 
 CINCS := $(foreach INC,$(INC_DIR),-I$(INC))
 
@@ -21,6 +21,7 @@ ifeq ($(PLATFORM), windows)
     SHARED_EXT = dll
 else ifeq ($(PLATFORM), linux)
     SHARED_EXT = so
+	CC := g++-16
 endif
 
 ifeq ($(MODE), release)
