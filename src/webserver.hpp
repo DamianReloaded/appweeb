@@ -20,7 +20,7 @@ namespace appweeb
 
         explicit WebServer(uint16_t port);
 
-        void Run();
+        bool Run();
 
         void Stop();
 

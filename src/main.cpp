@@ -36,7 +36,10 @@ int main()
 
     while (!g_stopRequested.load(std::memory_order_relaxed))
     {
-        server.Run();
+        if (!server.Run())
+        {
+            break;
+        }
     }
 
     server.Stop();

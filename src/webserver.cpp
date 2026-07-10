@@ -25,7 +25,7 @@ namespace appweeb
         m_listener.Close();
     }
 
-    void WebServer::Run()
+    bool WebServer::Run()
     {
         LogLine(std::format( "Web root: {}", m_rootPath.string()));
         LogLine(std::format( "Plugin directory: {}", m_pluginDirectory.string()));
@@ -59,8 +59,8 @@ namespace appweeb
 
         if (!m_listener.Listen(m_port))
         {
-            LogLine("Failed to start listener.");
-            return;
+            LogLine("Failed to start listener. Already running?");
+            return false;
         }
 
         m_running = true;
@@ -83,6 +83,8 @@ namespace appweeb
                 this,
                 std::move(client)).detach();
         }
+
+        return true;
     }
 
     std::string WebServer::ReceiveRequest(Socket* client)
@@ -403,22 +405,22 @@ namespace appweeb
 
         if (ext == ".html")
         {
-            return "text/html";
+            return "text/html; charset=utf-8";
         }
 
         if (ext == ".css")
         {
-            return "text/css";
+            return "text/css; charset=utf-8";
         }
 
         if (ext == ".js")
         {
-            return "application/javascript";
+            return "application/javascript; charset=utf-8";
         }
 
         if (ext == ".json")
         {
-            return "application/json";
+            return "application/json; charset=utf-8";
         }
 
         if (ext == ".png")
