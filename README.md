@@ -1,4 +1,4 @@
-!!! IMPORTANT: 
+!!! IMPORTANT !!!
 - To be able to upload files you need to change pluginDir in config.json to point to the directory containing the plugins. For this repo the values often are "pluginDir":"bin/linux/debug/plugins" and "pluginDir":"bin/windows/debug/plugins" 
 - Set your toolchain in the Makefiles (./Makefile and ./plugins/upload/Makefile)
 
