@@ -1,22 +1,34 @@
-async function UploadFile(path, bytes)
+function UploadFile(path, bytes, success, failure)
 {
-    const response = await fetch("/api/upload", {
-        method: "POST",
-        headers: {
-            "X-Path": path,
-            "Content-Type": "application/octet-stream"
-        },
-        body: bytes
-    });
-    const text = await response.text();
-    try
+    var request = new XMLHttpRequest();
+
+    request.open("POST", "/api/upload", true);
+    request.setRequestHeader("X-Path", path);
+    request.setRequestHeader("Content-Type", "application/octet-stream");
+
+    request.onreadystatechange = function()
     {
-        return JSON.parse(text);
-    }
-    catch
+        if (request.readyState !== 4)
+        {
+            return;
+        }
+
+        try
+        {
+            success(JSON.parse(request.responseText));
+        }
+        catch (e)
+        {
+            failure(request.responseText);
+        }
+    };
+
+    request.onerror = function()
     {
-        throw new Error(text);
-    }
+        failure("Network error");
+    };
+
+    request.send(bytes);
 }
 
 function SetResult(text)
@@ -24,82 +36,138 @@ function SetResult(text)
     document.getElementById("result").textContent = text;
 }
 
-async function LoadSettings()
+function LoadSettings()
 {
-    const output = document.getElementById("settings");
-    try
+    var output = document.getElementById("settings");
+
+    var request = new XMLHttpRequest();
+
+    request.open("GET", "data/settings.json", true);
+
+    request.onreadystatechange = function()
     {
-        const response = await fetch("data/settings.json");
-        if (!response.ok)
+        if (request.readyState !== 4)
+        {
+            return;
+        }
+
+        if (request.status !== 200)
         {
             output.textContent = "settings.json not found";
             return;
         }
-        const text = await response.text();
-        output.textContent = text;
-    }
-    catch (error)
+
+        output.textContent = request.responseText;
+    };
+
+    request.onerror = function()
     {
-        output.textContent = error.toString();
-    }
+        output.textContent = "Network error";
+    };
+
+    request.send();
 }
 
-document.getElementById("uploadButton").addEventListener("click", async () =>
+function StringToUtf8ArrayBuffer(text)
 {
-    try
+    var utf8 = unescape(encodeURIComponent(text));
+    var bytes = new Uint8Array(utf8.length);
+
+    var i;
+
+    for (i = 0; i < utf8.length; i++)
     {
-        const button = document.getElementById("uploadButton");
-        const fileInput = document.getElementById("uploadFile");
-        if (fileInput.files.length === 0)
-        {
-            SetResult("Please select a file.");
-            return;
-        }
-        const file = fileInput.files[0];
-        const bytes = await file.arrayBuffer();
-        let path = document.getElementById("uploadPath").value.trim();
-        if (!path)
+        bytes[i] = utf8.charCodeAt(i);
+    }
+
+    return bytes.buffer;
+}
+
+document.getElementById("uploadButton").addEventListener("click", function()
+{
+    var button = document.getElementById("uploadButton");
+    var fileInput = document.getElementById("uploadFile");
+
+    if (fileInput.files.length === 0)
+    {
+        SetResult("Please select a file.");
+        return;
+    }
+
+    var file = fileInput.files[0];
+
+    var reader = new FileReader();
+
+    reader.onload = function()
+    {
+        var path = document.getElementById("uploadPath").value.replace(/^\s+|\s+$/g, "");
+
+        if (path === "")
         {
             path = "uploads/" + file.name;
         }
+
         button.disabled = true;
         SetResult("Uploading...");
-        const result = await UploadFile(path, bytes);
-        SetResult(JSON.stringify(result, null, 4));
-    }
-    catch (error)
+
+        UploadFile(
+            path,
+            reader.result,
+            function(result)
+            {
+                button.disabled = false;
+                SetResult(JSON.stringify(result, null, 4));
+            },
+            function(error)
+            {
+                button.disabled = false;
+                SetResult(error.toString());
+            });
+    };
+
+    reader.onerror = function()
     {
-        console.error(error);
-        SetResult(error.toString());
-    }
-    finally
-    {
-        document.getElementById("uploadButton").disabled = false;
-    }
+        SetResult("Failed to read file.");
+    };
+
+    reader.readAsArrayBuffer(file);
 });
 
-document.getElementById("uploadFile").addEventListener("change", event =>
+document.getElementById("uploadFile").addEventListener("change", function(event)
 {
-    const file = event.target.files[0];
+    var file = event.target.files[0];
+
     if (!file)
     {
         return;
     }
+
     document.getElementById("uploadPath").value = "uploads/" + file.name;
 });
 
-document.getElementById("writeButton").addEventListener("click", async () =>
+document.getElementById("writeButton").addEventListener("click", function()
 {
     try
     {
-        const path = document.getElementById("path").value;
-        const jsonText = document.getElementById("json").value;
+        var path = document.getElementById("path").value;
+        var jsonText = document.getElementById("json").value;
+
         JSON.parse(jsonText);
-        const encoder = new TextEncoder();
-        const bytes = encoder.encode(jsonText);
-        const result = await UploadFile(path, bytes);
-        SetResult(JSON.stringify(result, null, 4));
-        await LoadSettings();
+
+        var bytes = StringToUtf8ArrayBuffer(jsonText);
+
+        UploadFile(
+            path,
+            bytes,
+            function(result)
+            {
+                SetResult(JSON.stringify(result, null, 4));
+                LoadSettings();
+            },
+            function(error)
+            {
+                SetResult(error.toString());
+            });
     }
     catch (error)
     {
@@ -107,7 +175,7 @@ document.getElementById("writeButton").addEventListener("click", async () =>
     }
 });
 
-window.addEventListener("load", async () =>
+window.addEventListener("load", function()
 {
-    await LoadSettings();
+    LoadSettings();
 });
