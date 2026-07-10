@@ -1,10 +1,14 @@
+!!! IMPORTANT: 
+- To be able to upload files you need to change pluginDir in config.json to point to the directory containing the plugins. For this repo the values often are "pluginDir":"bin/linux/debug/plugins" and "pluginDir":"bin/windows/debug/plugins" 
+- Set your toolchain in the Makefiles (./Makefile and ./plugins/upload/Makefile)
+
 # AppWeeb
 
 AppWeeb is a lightweight desktop application framework built around a simple idea:
 
 - Write your application entirely in HTML, CSS and JavaScript.
 - Serve those files locally from a native C++ executable.
-- Expose local APIs implemented in C++.
+- Extend the server through native C++ plugins.
 - Store application data using files.
 - Avoid Electron, Node.js and large runtimes.
 
@@ -18,11 +22,11 @@ The browser becomes the user interface while C++ provides local services.
 - [Supported Platforms](#supported-platforms)
 - [Current Features](#current-features)
   - [Static File Hosting](#static-file-hosting)
-  - [Configurable Web Root](#configurable-web-root)
-  - [File Writing API](#file-writing-api)
-  - [File Upload as Application Data Storage](#file-upload-as-application-data-storage)
-  - [Custom Endpoints](#custom-endpoints)
+  - [Configuration](#configuration)
+  - [Plugin System](#plugin-system)
+  - [Built-in Upload Plugin](#built-in-upload-plugin)
   - [Cross-Platform](#cross-platform)
+- [Configuration File](#configuration-file)
 - [Why Use This?](#why-use-this)
 - [Building](#building)
   - [Linux](#linux)
@@ -30,8 +34,7 @@ The browser becomes the user interface while C++ provides local services.
   - [Clean](#clean)
   - [Rebuild](#rebuild)
 - [Build Output](#build-output)
-- [VS Code](#vs-code)
-- [Example Workflow](#example-workflow)
+- [Example Directory Layout](#example-directory-layout)
 - [Project Status](#project-status)
 
 ## Goals
@@ -40,6 +43,7 @@ The browser becomes the user interface while C++ provides local services.
 - No external runtime requirements
 - Fast startup
 - Simple deployment
+- Plugin-based extensibility
 - Cross-platform support
 - Native access to local files
 - Web technologies for UI development
@@ -55,23 +59,7 @@ The browser becomes the user interface while C++ provides local services.
 
 Any file located within the configured web root can be served through HTTP.
 
-Example layout:
-
-```text
-appweeb
-
-index.html
-app.js
-style.css
-
-images/
-audio/
-video/
-
-data/
-```
-
-Requests:
+Example requests:
 
 ```text
 GET /
@@ -82,73 +70,76 @@ GET /video/intro.mp4
 
 Files are served directly from disk.
 
-### Configurable Web Root
+### Configuration
 
-By default AppWeeb serves files from the directory containing the executable.
+AppWeeb loads its configuration from an optional `config.json` located beside the executable.
 
-Example:
+Configuration property names are case-insensitive.
 
-```text
-(Application files)
-> appweeb
-> config.json (optional)
+Currently supported settings are:
 
-(Your content files)
-> index.html
-> app.js
-> style.css
-```
+| Property | Description |
+|----------|-------------|
+| `wwwroot` | Directory used for serving static files. |
+| `plugindir` | Directory from which plugins are loaded. |
+| `httpport` | HTTP server port. |
 
-You may optionally create a `config.json` file beside the executable:
+If `config.json` is missing, sensible defaults are used.
 
-```javascript
-// config.json
+### Plugin System
+
+AppWeeb now supports dynamically loaded plugins.
+
+Plugins are compiled as:
+
+- `.dll` on Windows
+- `.so` on Linux
+
+Each plugin implements the `IEndpoint` interface and exports two functions:
+
+```cpp
+extern "C"
 {
-	"wwwroot":"../../wwwroot",
-	"httpport":8080
+    appweeb::IEndpoint* CreateEndpoint();
+    void DestroyEndpoint(appweeb::IEndpoint*);
 }
 ```
 
-The `wwwroot` value in config.json can be set to any location
+Every loaded plugin registers one or more HTTP endpoints that become available immediately when the server starts.
 
-Example:
+This allows application functionality to be added without modifying or rebuilding the main executable.
 
-```text
-bin/
-    linux/
-        debug/
-            appweeb
-            config.json
+Typical plugin uses include:
 
-wwwroot/
-    index.html
-    app.js
-    style.css
-```
+- Database access
+- File processing
+- Image generation
+- REST APIs
+- Authentication
+- Communication with external services
+- Application-specific business logic
 
-In this case all file serving and file-writing APIs operate relative to the configured web root instead of the executable directory.
+### Built-in Upload Plugin
 
-If `config.json` does not exist, the `wwwroot` property is missing, or the configured path is invalid, AppWeeb falls back to the executable directory or any value hardcoded in the application using [WebServer::SetRootPath].
-
-### File Writing API
-
-Endpoint:
+The repository includes an upload plugin exposing:
 
 ```text
 POST /api/upload
 ```
 
-Request:
+Example request:
 
 ```javascript
+await fetch("/api/upload",
 {
-        method: "POST",
-        headers: {
-            "X-Path": path,
-            "Content-Type": "application/octet-stream"
-        },
-        body: fileBytes
-    }
+    method: "POST",
+    headers:
+    {
+        "X-Path": "data/settings.json",
+        "Content-Type": "application/octet-stream"
+    },
+    body: fileBytes
+});
 ```
 
 Response:
@@ -159,47 +150,72 @@ Response:
 }
 ```
 
-The specified file is written relative to the configured web root, replacing any existing content.
-
-### File Upload as Application Data Storage
-
-The file upload API can be used to persist structured application data generated by the frontend.
-
-A common use case is storing form data as JSON files, effectively using the file system as a lightweight server-side database.
-
-Typical workflow:
-
-- User fills out a form in the browser UI
-- JavaScript serializes the form into JSON
-- The JSON is converted into bytes
-- The bytes are uploaded using /api/upload
-- The file is stored under the configured web root
-- The json can then be retrieved from the server to list contents
-
-### Custom Endpoints
-
-AppWeeb allows arbitrary HTTP endpoints to be added directly to the C++ web server. These endpoints can implement any server-side logic required by the application like:
-
-- Database operations
-- External API / web service communication
-- Image or media generation
-- File processing
-- Authentication logic
-- Background task triggering
-etc.
-
-Since the server is fully native, each endpoint can execute arbitrary C++ code and interact directly with the filesystem, operating system APIs, or third-party services.
-
-This makes AppWeeb suitable not only for static file hosting and data storage, but also for building fully custom backend behavior tailored to a specific application.
+The uploaded file is written relative to the configured `wwwroot`.
 
 ### Cross-Platform
 
-AppWeeb includes platform-specific socket implementations for:
+Platform-specific implementations are provided for:
 
-- Windows (WinSock2)
-- Linux (POSIX sockets)
+- Windows
+  - WinSock
+  - LoadLibrary
+- Linux
+  - POSIX sockets
+  - dlopen
 
-The public API remains platform-independent.
+The public API remains platform independent.
+
+## Configuration File
+
+Example:
+
+```json
+{
+    "wwwroot": "../../wwwroot",
+    "plugindir": "../../plugins",
+    "httpport": 8080
+}
+```
+
+Example layout:
+
+```text
+bin/
+    windows/
+        debug/
+            appweeb.exe
+            config.json
+            plugins/
+                upload.dll
+
+wwwroot/
+    index.html
+    app.js
+    style.css
+```
+
+or
+
+```text
+bin/
+    linux/
+        debug/
+            appweeb
+            config.json
+            plugins/
+                upload.so
+
+wwwroot/
+    index.html
+    app.js
+    style.css
+```
+
+If omitted:
+
+- `wwwroot` defaults to the executable directory.
+- `plugindir` defaults to a `plugins` directory beside the executable.
+- `httpport` defaults to the value specified when constructing `WebServer`.
 
 ## Why Use This?
 
@@ -214,7 +230,7 @@ AppWeeb is useful when building:
 - Offline desktop applications
 - Configuration editors
 
-Instead of:
+Instead of shipping:
 
 ```text
 Electron
@@ -222,16 +238,18 @@ Electron
     + Node.js
 ```
 
-the application consists of:
+an application can consist of:
 
 ```text
 appweeb
+plugins/
+wwwroot/
 html
 css
 js
 ```
 
-which can significantly reduce deployment size and complexity.
+This significantly reduces deployment size and complexity while keeping the backend fully native.
 
 ## Building
 
@@ -242,13 +260,13 @@ Requirements:
 
 ### Linux
 
-Debug build:
+Debug:
 
 ```bash
 make PLATFORM=linux MODE=debug
 ```
 
-Release build:
+Release:
 
 ```bash
 make PLATFORM=linux MODE=release
@@ -256,13 +274,13 @@ make PLATFORM=linux MODE=release
 
 ### Windows
 
-Debug build:
+Debug:
 
 ```bash
 make PLATFORM=windows MODE=debug
 ```
 
-Release build:
+Release:
 
 ```bash
 make PLATFORM=windows MODE=release
@@ -282,95 +300,54 @@ make rebuild
 
 ## Build Output
 
-Debug:
+Executable:
 
 ```text
 bin/linux/debug/appweeb
 bin/windows/debug/appweeb.exe
-```
 
-Release:
-
-```text
 bin/linux/release/appweeb
 bin/windows/release/appweeb.exe
 ```
 
-## VS Code
-
-The repository includes VS Code configurations for:
-
-- Linux IntelliSense
-- Windows IntelliSense
-- Linux debugging
-- Windows debugging
-- Linux build tasks
-- Windows build tasks
-
-The debugger automatically rebuilds the selected target before launching.
-
-Select the active IntelliSense configuration using:
+Plugins:
 
 ```text
-Ctrl+Shift+P
-C/C++: Select a Configuration
+bin/linux/debug/plugins/*.so
+bin/windows/debug/plugins/*.dll
+
+bin/linux/release/plugins/*.so
+bin/windows/release/plugins/*.dll
 ```
 
-Select the desired debug target from:
+## Example Directory Layout
 
 ```text
-Run and Debug
-```
+appweeb.exe
+config.json
 
-Examples:
+plugins/
+    upload.dll
 
-```text
-Linux Debug
-Linux Release
-Windows Debug
-Windows Release
-```
+wwwroot/
+    index.html
+    app.js
+    style.css
 
-## Example Workflow
-
-Directory structure:
-
-```text
-appweeb (executable)
-
-index.html
-app.js
-style.css
-
-data/
-    settings.json
-```
-
-JavaScript:
-
-```javascript
-async function UploadFile(path, fileBytes)
-{
-    const response = await fetch("/api/upload", {
-        method: "POST",
-        headers: {
-            "X-Path": path,
-            "Content-Type": "application/octet-stream"
-        },
-        body: fileBytes
-    });
-}
+    data/
+        settings.json
 ```
 
 ## Project Status
 
-AppWeeb is currently a minimal proof-of-concept focused on:
+AppWeeb is currently a lightweight native framework focused on:
 
-- HTTP serving
-- Local file access
-- File upload APIs
+- HTTP static file serving
 - Configurable web roots
+- Plugin-based HTTP endpoints
+- Native file access
+- Built-in upload endpoint
 - Cross-platform support
 - Lightweight deployment
 
-The long-term goal is to provide a compact foundation for desktop applications built with web technologies while keeping the native backend as small and straightforward as possible.
+The long-term goal is to provide a compact foundation for desktop applications built with web technologies while allowing native functionality to be extended through dynamically loaded plugins.

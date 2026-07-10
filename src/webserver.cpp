@@ -4,6 +4,7 @@
 #include <fstream>
 #include <sstream>
 #include <thread>
+#include <format>
 #include <wchar.h>
 #include <endpoint.hpp>
 #include "pluginloader.hpp"
